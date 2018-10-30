@@ -1,0 +1,6 @@
+---
+docker_enable: true
+docker_persistent_path: "/docker"
+docker_user: "docker"
+docker_group: "docker"
+docker_url: 127.0.0.1:2376

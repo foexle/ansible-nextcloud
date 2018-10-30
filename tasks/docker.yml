@@ -1,0 +1,67 @@
+---
+- name: Install docker client
+  pip:
+    name: docker
+    version: 2.7.0
+
+- name: Create docker user 
+  user: 
+    name: "{{ docker_user }}"
+    append: yes
+
+- name: Create docker root
+  file:
+    path: "{{ docker_persistent_path }}"
+    owner: "{{ docker_user }}"
+    group: "{{ docker_group }}"
+
+- name: Create docker persistent dir's
+  file:
+    path: "{{ docker_persistent_path }}/{{ item }}"
+    owner: "{{ docker_user }}"
+    group: "{{ docker_group }}"
+    state: directory
+  with_items:
+    - nextcloud
+    - mysql
+    - build
+    - data
+
+- name: Write nextcloud container env file
+  template:
+    src: db.env.j2
+    dest: "{{ docker_persistent_path }}/build/db.env"
+    mode: 0644
+    owner: root
+    group: root
+    backup: no
+  tags:
+    - nextcloud
+    - docker
+
+- name: Write nextcloud docker compose file
+  template:
+    src: docker-compose.j2
+    dest: "{{ docker_persistent_path }}/build/docker-compose.yml"
+    mode: 0644
+    owner: root
+    group: root
+    backup: no
+  tags:
+    - nextcloud
+    - docker
+
+
+- name: Copy docker image app build files
+  copy: 
+    src: "docker/app/{{ item }}"
+    dest: "{{ docker_persistent_path }}/build/app"
+    owner: root
+    group: root
+  with_items:
+    - Dockerfile
+    - redis.config.php
+
+- name: Start nextcloud docker with compose
+  shell: cd {{ docker_persistent_path }}/build/ && docker-compose build --pull && docker-compose up -d
+
